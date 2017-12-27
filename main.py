@@ -4,7 +4,7 @@ from wordpress_xmlrpc import Client, WordPressPost, WordPressPage
 from wordpress_xmlrpc.methods.posts import GetPosts, NewPost
 from wordpress_xmlrpc.methods.users import GetUserInfo
 
-from akcia import get_year_list
+from year import get_year_list
 
 # def wp():
 #     wp = Client(url='https://nova.mkck.sk/xmlrpc.php', username='kraic', password='5*176UHb#*6x1EPEk2ye')
