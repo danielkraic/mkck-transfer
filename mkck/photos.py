@@ -3,7 +3,7 @@ from typing import Dict, Optional
 from bs4 import BeautifulSoup, Tag
 
 
-def get_akcia_photos(file: str) -> Dict[str, str]:
+def get_event_photos(file: str) -> Dict[str, str]:
     imgs = {}
 
     with open(file, 'r') as f:

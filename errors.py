@@ -1,2 +1,0 @@
-class AkciaError(Exception):
-    pass

@@ -1,4 +1,4 @@
-from config import DEBUG
+from mkck.config import DEBUG
 
 
 def debug(message: str) -> None:

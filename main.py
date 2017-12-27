@@ -1,10 +1,4 @@
-from typing import Optional, List
-
-from wordpress_xmlrpc import Client, WordPressPost, WordPressPage
-from wordpress_xmlrpc.methods.posts import GetPosts, NewPost
-from wordpress_xmlrpc.methods.users import GetUserInfo
-
-from year import get_year_list
+from mkck.year import get_year_events_list
 
 # def wp():
 #     wp = Client(url='https://nova.mkck.sk/xmlrpc.php', username='kraic', password='5*176UHb#*6x1EPEk2ye')
@@ -18,8 +12,8 @@ from year import get_year_list
 def print_year(year) -> None:
     print(year)
 
-    for akcia in get_year_list(year=year):
-        print(akcia)
+    for event in get_year_events_list(year=year):
+        print(event)
 
 
 def main() -> None:

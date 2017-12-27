@@ -1,18 +1,18 @@
 from typing import List
 
-from debug import debug
-from errors import AkciaError
-from utils import clean_html
+from mkck.debug import debug
+from mkck.errors import EventError
+from mkck.utils import clean_html
 
 
-def get_akcia_zapis(file: str) -> str:
+def get_event_story(file: str) -> str:
     with open(file, 'r') as f:
-        zapis = clean_html(f.read())
-        lines = [line.strip() for line in zapis.splitlines()]
+        event_story = clean_html(f.read())
+        lines = [line.strip() for line in event_story.splitlines()]
         lines = [line for line in lines if line != '']
 
-        header_index = _get_zapis_header_index(lines)
-        footer_index = _get_zapis_footer_index(lines)
+        header_index = _get_header_index(lines)
+        footer_index = _get_footer_index(lines)
 
         debug('hd: {}'.format(header_index))
         debug('ft: {}'.format(footer_index))
@@ -21,12 +21,12 @@ def get_akcia_zapis(file: str) -> str:
 
         valid_lines = lines[header_index:footer_index]
         if len(valid_lines) == 0:
-            raise AkciaError('Zapis from file {} is empty'.format(file))
+            raise EventError('Event story from file {} is empty'.format(file))
 
         return '\n'.join(valid_lines)
 
 
-def _get_zapis_header_index(lines: List[str]) -> int:
+def _get_header_index(lines: List[str]) -> int:
     index = 0
     for i, line in enumerate(lines):
         if index == 0:
@@ -41,7 +41,7 @@ def _get_zapis_header_index(lines: List[str]) -> int:
     return index
 
 
-def _get_zapis_footer_index(lines: List[str]) -> int:
+def _get_footer_index(lines: List[str]) -> int:
     index = -1
     for i, line in reversed(list(enumerate(lines))):
         # print('{}: {}'.format(i, line))
