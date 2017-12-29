@@ -15,9 +15,10 @@ def clean_html(raw_html: str) -> str:
     if len(raw_html.splitlines()) == 1:
         raw_html = raw_html.replace('div>', 'div>\n')
 
+    raw_html = re.sub(re_nbsp, ' ', raw_html)
     raw_html = html.unescape(raw_html)
     text = re.sub(re_tags, '', raw_html)
-    text = re.sub(re_nbsp, '', text)
+    text = re.sub(re_nbsp, ' ', text)
     text = re.sub(re_comments, '', text)
     text = re.sub(re_empty_line, '\n\n', text)
 
@@ -30,7 +31,7 @@ def find_files(which: str, where: str='.') -> List[str]:
 
 
 def extract_date(year: int, text: str) -> Optional[date]:
-    m = re.search(r'(\d{1,2})\.(\d{1,2})', text)
+    m = re.search(r'\D(\d{1,2})\.(\d{1,2})\.', text)
     if m:
         day = int(m.group(1))
         month = int(m.group(2))

@@ -20,7 +20,7 @@ year_page_template = '''
                 <p>
                   {% for item in events_planned %}
                     {{item.event_number}}. <a href="{{item.link}}">{{item.title}}{{item.date}}</a><br />
-                  {% endfor %}  
+                  {% endfor %}
                 </p>
               </td>
               <td width="49%">

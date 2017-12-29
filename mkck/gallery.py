@@ -1,13 +1,15 @@
 from contextlib import contextmanager
 import os
 import shutil
+from typing import Generator
 
 from mkck.config import DIR_PHOTOS_UPLOAD_TMP
 from mkck.debug import debug
 
 
 class GalleryItem(object):
-    def __init__(self, year: int, event_number: int, image_number: int, path: str, caption: str, is_planned: bool=True):
+    def __init__(self, year: int, event_number: int, image_number: int, path: str, caption: str,
+                 is_planned: bool=True) -> None:
         self.path = path
         self.caption = caption
         self.name = '{year}-{planned}{event_number:02d}-{image_number:02d}.jpg'.format(
@@ -18,7 +20,7 @@ class GalleryItem(object):
 
 
 @contextmanager
-def temporary_image(path, name) -> str:
+def temporary_image(path: str, name: str) -> Generator[str, None, None]:
     dst = '{}/{}'.format(DIR_PHOTOS_UPLOAD_TMP, name)
 
     shutil.copy(src=path, dst=dst)

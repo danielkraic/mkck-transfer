@@ -12,12 +12,12 @@ from wordpress.api import WordpressAPI
 
 
 class Importer(object):
-    def __init__(self, url: str, username: str, password: str):
+    def __init__(self, url: str, username: str, password: str) -> None:
         self._client: Client = Client(url='{}/xmlrpc.php'.format(url), username=username, password=password)
         self._api: WordpressAPI = WordpressAPI(url=url, username=username, password=password)
 
-    def import_post(self, event: Event) -> None:
-        images = self._api.upload_images(images=event.photos, publish_date=event.date)
+    def create_event_post(self, event: Event) -> None:
+        images = self.get_event_photos(year=event.year, event_number=event.event_number, is_planned=event.is_planned)
 
         post = WordPressPost()
         post.post_status = 'publish'
@@ -36,10 +36,16 @@ class Importer(object):
         post_id = self._client.call(NewPost(post))
         notice('Imported post {}. {}'.format(post_id, event))
 
+    def upload_event_photos(self, event: Event) -> List[int]:
+        return self._api.upload_images(images=event.photos, publish_date=event.date)
+
+    def get_event_photos(self, year: int, event_number: int, is_planned: bool=True) -> List[int]:
+        return self._api.get_post_images(year=year, event_number=event_number, is_planned=is_planned)
+
     def remove_year_items(self, year: int) -> None:
         date_from, date_to = self._api.get_year_date_range(year=year)
 
-        for item_type in ['posts', 'pages', 'media']:
+        for item_type in ['posts', 'pages']:
             items = self._api.get_items(item_type=item_type, date_from=date_from, date_to=date_to)
             notice('{} items to remove: {}'.format(item_type, len(items)))
             for item_id in [item['id'] for item in items]:

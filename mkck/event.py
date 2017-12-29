@@ -16,7 +16,7 @@ def is_without_photos(year: int, number: int) -> bool:
 
 
 class Event(object):
-    def __init__(self, year: int, number: int, title: str, _date: Optional[date]):
+    def __init__(self, year: int, number: int, title: str, _date: Optional[date]) -> None:
         self._year: int = year
         self._number: int = number
         self._is_planned = True  # TODO: add support for non-planned events
@@ -33,14 +33,22 @@ class Event(object):
         self._validate()
 
     @property
-    def year(self):
+    def year(self) -> int:
         return self._year
+
+    @property
+    def event_number(self) -> int:
+        return self._number
+
+    @property
+    def is_planned(self) -> bool:
+        return self._is_planned
 
     def __str__(self):
         return '{}:{} t:{} d:{} c:{} p:{}'.format(self._year, self._number, self.title, self.date, len(self._story),
                                                   len(self.photos))
 
-    def get_content(self, images: Optional[List[int]]=None):
+    def get_content(self, images: Optional[List[int]]=None) -> str:
         if not images:
             return self._get_story_content()
 
@@ -56,7 +64,7 @@ class Event(object):
 
         return '\n'.join(_format_lines(lines=lines))
 
-    def _validate(self):
+    def _validate(self) -> None:
         try:
             if self._year < 1990:
                 raise ValueError('Invalid event year {}'.format(self._year))

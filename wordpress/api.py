@@ -9,10 +9,10 @@ from mkck.gallery import GalleryItem, temporary_image
 
 
 class WordpressAPI(object):
-    def __init__(self, url: str, username: str, password: str):
+    def __init__(self, url: str, username: str, password: str) -> None:
         self._api_url = '{}/wp-json/wp/v2'.format(url)
-        self._username = username
-        self._password = password
+        self._session = requests.session()
+        self._session.auth = HTTPBasicAuth(username=username, password=password)
 
     def upload_images(self, images: List[GalleryItem], publish_date: Optional[date]) -> List[int]:
         resp = []
@@ -43,8 +43,7 @@ class WordpressAPI(object):
                                        month=publish_date.month,
                                        day=publish_date.day).isoformat()
 
-        resp = requests.post(url=self._api_url + '/media', auth=HTTPBasicAuth(self._username, self._password),
-                             files=data, data=payload)
+        resp = self._session.post(url=self._api_url + '/media', files=data, data=payload)
         resp.raise_for_status()
 
         image_id = resp.json()['id']
@@ -59,20 +58,33 @@ class WordpressAPI(object):
 
         return date_from, date_to
 
-    def get_items(self, item_type: str, date_from: datetime, date_to: datetime) -> List[dict]:
+    def get_items(self, item_type: str, date_from: datetime, date_to: datetime, search: Optional[str]=None) \
+            -> List[dict]:
         payload = {
             'after': date_from.isoformat(),
             'before': date_to.isoformat(),
             'per_page': 100,
         }
 
-        resp = requests.get(url=self._api_url + '/' + item_type, auth=HTTPBasicAuth(self._username, self._password),
-                            params=payload)
+        if search:
+            payload['search'] = search
+
+        resp = self._session.get(url=self._api_url + '/' + item_type, params=payload)
         resp.raise_for_status()
         return resp.json()
 
-    def remove_items(self, item_type, item_id):
-        resp = requests.delete(url=self._api_url + '/{}/{}'.format(item_type, item_id),
-                               auth=HTTPBasicAuth(self._username, self._password))
+    def remove_items(self, item_type, item_id) -> None:
+        resp = self._session.delete(url=self._api_url + '/{}/{}'.format(item_type, item_id))
         resp.raise_for_status()
         notice('removed {} with id {}'.format(item_type, item_id))
+
+    def get_post_images(self, year: int, event_number: int, is_planned: bool=True) -> List[int]:
+        date_from, date_to = self.get_year_date_range(year=year)
+        file_name_prefix = '{year}-{planned}{event_number:02d}-'.format(year=year, event_number=event_number,
+                                                                        planned='' if is_planned else 'mp-')
+
+        items = self.get_items(date_from=date_from, date_to=date_to, item_type='media', search=file_name_prefix)
+
+        return [item['id']
+                for item in items
+                if item['media_details']['sizes']['full']['file'].startswith(file_name_prefix)]

@@ -33,7 +33,7 @@ def _get_header_index(lines: List[str]) -> int:
             if line.startswith('Archív akcií'):
                 index = i+1
         else:
-            if line in ['', '<!--', 'pata', '//-->']:  # or line.startswith('Zápis z akcie'):
+            if line in ['', '<!--', 'pata', '//-->']:
                 index = i+1
             else:
                 break
