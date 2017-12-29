@@ -9,7 +9,7 @@ def get_event_story(file: str) -> str:
     with open(file, 'r') as f:
         event_story = clean_html(f.read())
         lines = [line.strip() for line in event_story.splitlines()]
-        lines = [line for line in lines if line != '']
+        lines = [line for line in lines if line not in ['', '.']]
 
         header_index = _get_header_index(lines)
         footer_index = _get_footer_index(lines)
@@ -53,5 +53,10 @@ def _get_footer_index(lines: List[str]) -> int:
                 index = i
             else:
                 break
+
+    for i, line in reversed(list(enumerate(lines))):
+        if line.startswith('Foto z akcie:'):
+            index = i
+            break
 
     return index

@@ -42,10 +42,19 @@ class Event(object):
 
     def get_content(self, images: Optional[List[int]]=None):
         if not images:
-            return self._story
+            return self._get_story_content()
 
-        images_str = ','.join([str(img) for img in images])
-        return self._story + '\n' + '[gallery columns="1" size="full" link="none" ids="{}"]'.format(images_str)
+        return self._get_story_content() + '\n' + _get_gallery_content(images=images)
+
+    def _get_story_content(self) -> str:
+        lines = self._story.splitlines()
+        if not lines:
+            return ''
+
+        if lines[0].startswith('Zápis z'):
+            lines.pop(0)
+
+        return '\n'.join(_format_lines(lines=lines))
 
     def _validate(self):
         try:
@@ -109,3 +118,28 @@ class Event(object):
             photos_dir = event_base
 
         return photos_file, photos_dir
+
+
+def _get_gallery_content(images: List[int]) -> str:
+    images_str = ','.join([str(img) for img in images])
+    return '[gallery columns="1" size="full" link="none" ids="{}"]'.format(images_str)
+
+
+def _format_lines(lines: List[str]) -> List[str]:
+    res = []
+
+    for i, line in enumerate(lines):
+        is_paragraph = _is_paragraph(line=line) and (i == 0 or _is_paragraph(line=lines[i - 1]))
+        res.append(_format_line(line=line, is_paragraph=is_paragraph))
+
+    return res
+
+
+def _is_paragraph(line: str) -> bool:
+    return not (line.startswith('·') or line.startswith('–') or line.endswith(':'))
+
+
+def _format_line(line: str, is_paragraph: bool) -> str:
+    if not is_paragraph:
+        return line
+    return '<p>{}</p>'.format(line)

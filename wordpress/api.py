@@ -44,7 +44,7 @@ class WordpressAPI(object):
                                        day=publish_date.day).isoformat()
 
         resp = requests.post(url=self._api_url + '/media', auth=HTTPBasicAuth(self._username, self._password),
-                             files=data, params=payload)
+                             files=data, data=payload)
         resp.raise_for_status()
 
         image_id = resp.json()['id']
