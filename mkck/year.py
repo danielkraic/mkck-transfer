@@ -22,18 +22,21 @@ def _get_year_file_path(year: int) -> str:
 
 
 def _read_year_file(year: int, file: str) -> List[Event]:
+    with open(file, 'r') as f:
+        return _get_events(year=year, content=f.read())
+
+
+def _get_events(year: int, content: str) -> List[Event]:
     result = []
 
-    with open(file, 'r') as f:
-        content = f.read()
-        links = re.findall(r'<a href.*akciadet.*cakcie=(\d+).*>(.*)<\/a>', content)
+    links = re.findall(r'<a href.*akciadet.*cakcie=(\d+).*>(.*)<\/a>', content)
 
-        for link in links:
-            num, title = link
-            title = html.unescape(title)
-            title = title.replace(u'\xa0', u' ')
+    for link in links:
+        num, title = link
+        title = html.unescape(title)
+        title = title.replace(u'\xa0', u' ')
 
-            event = Event(year=year, number=int(num), title=title, _date=extract_date(year=year, text=title))
-            result.append(event)
+        event = Event(year=year, number=int(num), title=title, _date=extract_date(year=year, text=title))
+        result.append(event)
 
-    return sorted(result, key=lambda item: '{:02d}'.format(item._number))
+    return sorted(result, key=lambda item: '{}-{:02d}'.format(item.year, item._number))

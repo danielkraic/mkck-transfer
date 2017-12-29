@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 import fnmatch
 import html
 import os
@@ -37,3 +37,11 @@ def extract_date(year: int, text: str) -> Optional[date]:
         return date(year, month, day)
 
     return None
+
+
+def format_iso_date(iso_date: str) -> str:
+    if not iso_date:
+        return ''
+
+    dt = datetime.strptime(iso_date, "%Y-%m-%dT%H:%M:%S")
+    return ' ({}.{}.)'.format(dt.day, dt.month)
