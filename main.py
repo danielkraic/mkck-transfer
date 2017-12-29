@@ -1,30 +1,31 @@
-from typing import Optional, List
+from mkck.year import get_year_events_list
+from wordpress.importer import Importer
 
-from wordpress_xmlrpc import Client, WordPressPost, WordPressPage
-from wordpress_xmlrpc.methods.posts import GetPosts, NewPost
-from wordpress_xmlrpc.methods.users import GetUserInfo
+wp_url = 'http://localhost:8000'
+wp_username = ''
+wp_password = ''
 
-from akcia import get_year_list
-
-# def wp():
-#     wp = Client(url='https://nova.mkck.sk/xmlrpc.php', username='kraic', password='5*176UHb#*6x1EPEk2ye')
-#     res = wp.call(method=GetPosts())
-#
-#     print('res:{}'.format(len(res)))
-#     for item in res:
-#         print(item)
+w = Importer(url=wp_url, username=wp_username, password=wp_password)
 
 
-def print_year(year) -> None:
-    print(year)
+def create_year_posts(year: int) -> None:
+    events = get_year_events_list(year=year)
+    for event in events:
+        # w.upload_post_images(event=event)
+        w.create_event_post(event=event)
 
-    for akcia in get_year_list(year=year):
-        print(akcia)
+
+def remove_year(year: int) -> None:
+    w.remove_year_items(year=year)
 
 
 def main() -> None:
-    for year in range(2010, 2017):
-        print_year(year=year)
+    year = 2010
+
+    create_year_posts(year=year)
+    w.create_year_page(year=year)
+
+    # remove_year(year=year)
 
 
 if __name__ == '__main__':
