@@ -4,7 +4,7 @@ import re
 from typing import List
 
 from mkck.event import Event
-from mkck.config import DIR_DOCS_BASE, FILE_YEAR
+from mkck.config import DIR_DOCS_BASE, FILE_YEAR, EVENTS_TO_SKIP_PER_YEAR
 from mkck.errors import EventError
 from mkck.utils import extract_date
 
@@ -29,14 +29,34 @@ def _read_year_file(year: int, file: str) -> List[Event]:
 def _get_events(year: int, content: str) -> List[Event]:
     result = []
 
-    links = re.findall(r'<a href.*akciadet.*cakcie=(\d+).*>(.*)<\/a>', content)
+    # links = re.findall(r'<a href.*akciadet.*cakcie=(\d+).*>(.*)<\/a>', content)
+    links = re.findall(r'<a href.*akciadet.*cakcie=(\d+)[^>]*>([^<]+)<', content)
 
     for link in links:
         num, title = link
         title = html.unescape(title)
         title = title.replace(u'\xa0', u' ')
 
+        if _skip_event(year=year, event_number=int(num)):
+            continue
+
+        event = Event(year=year, number=int(num), title=title, _date=extract_date(year=year, text=title))
+        result.append(event)
+
+    links = re.findall(r'<a href.*akciadet.*cakcie=KT[^>]*>([^<]+)<', content)
+    for link in links:
+        num, title = 99, link
+        title = html.unescape(title)
+        title = title.replace(u'\xa0', u' ')
+
+        if _skip_event(year=year, event_number=int(num)):
+            continue
+
         event = Event(year=year, number=int(num), title=title, _date=extract_date(year=year, text=title))
         result.append(event)
 
     return sorted(result, key=lambda item: '{}-{:02d}'.format(item.year, item._number))
+
+
+def _skip_event(year: int, event_number: int) -> bool:
+    return event_number in EVENTS_TO_SKIP_PER_YEAR.get(year, [])

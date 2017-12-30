@@ -9,10 +9,12 @@ def get_event_story(file: str) -> str:
     with open(file, 'r') as f:
         event_story = clean_html(f.read())
         lines = [line.strip() for line in event_story.splitlines()]
-        lines = [line for line in lines if line not in ['', '.']]
+        lines = [line for line in lines if line not in ['', '.', 'menu pre zapis', '<!--']]
 
         header_index = _get_header_index(lines)
         footer_index = _get_footer_index(lines)
+        if footer_index < 0:
+            footer_index = len(lines) + 1
 
         debug('hd: {}'.format(header_index))
         debug('ft: {}'.format(footer_index))
@@ -30,7 +32,7 @@ def _get_header_index(lines: List[str]) -> int:
     index = 0
     for i, line in enumerate(lines):
         if index == 0:
-            if line.startswith('Archív akcií'):
+            if line.startswith('Archív akci'):
                 index = i+1
         else:
             if line in ['', '<!--', 'pata', '//-->']:
@@ -44,7 +46,9 @@ def _get_header_index(lines: List[str]) -> int:
 def _get_footer_index(lines: List[str]) -> int:
     index = -1
     for i, line in reversed(list(enumerate(lines))):
-        # print('{}: {}'.format(i, line))
+        if index == -1 and _is_signature(text=line):
+            break
+
         if index == -1:
             if line.startswith('pata') or line.startswith('Stránka MKCK - Malo'):
                 index = i
@@ -60,3 +64,14 @@ def _get_footer_index(lines: List[str]) -> int:
             break
 
     return index
+
+
+def _is_signature(text: str) -> bool:
+    if text.find(' administrátor ') != -1:
+        return False
+
+    names = ['Kraic', 'Herceg', 'Golier', 'Poláček', 'Naništa']
+    for name in names:
+        if text.endswith(name):
+            return True
+    return False

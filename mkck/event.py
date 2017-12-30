@@ -69,7 +69,7 @@ class Event(object):
             if self._year < 1990:
                 raise ValueError('Invalid event year {}'.format(self._year))
 
-            if self._number < 1 or self._number > 50:
+            if self._number < 1 or self._number > 99:
                 raise ValueError('Invalid event number {}'.format(self._number))
 
             if len(self.title) < 3:

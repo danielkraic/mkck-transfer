@@ -7,22 +7,51 @@ from typing import List, Optional
 
 
 def clean_html(raw_html: str) -> str:
+    lines_count = len(raw_html.splitlines())
+    if lines_count == 1:
+        raw_html = raw_html.replace('div>', 'div>\n')
+    if lines_count <= 5:
+        raw_html = raw_html.replace('<p>', '\n<p>')
+
+    lines = raw_html.splitlines()
+    tag_if = None
+    tag_endif = None
+    for i, line in enumerate(lines):
+        if not tag_if and line.find('[if gte ') != -1:
+            tag_if = i
+        if line.find('<![endif]') != -1:
+            tag_endif = i
+
+    if tag_if and tag_endif:
+        raw_html = '\n'.join(lines[0:tag_if] + lines[tag_endif+1:])
+
+    re_nbsp = re.compile(r'&nbsp;')
+    re_ndash = re.compile(r'&ndash;')
+    raw_html = re.sub(re_nbsp, ' ', raw_html)
+    raw_html = re.sub(re_ndash, ' ', raw_html)
+    # raw_html = re.sub(re_lsd, ' ', raw_html)
+
+    raw_html = re.sub(r'(<)?[^<]+margin-bottom[^>]+(>)?', '', raw_html)
+    raw_html = re.sub(r'(<)?[^<]+:justify[^>]+(>)?', '', raw_html)
+    raw_html = re.sub(r'(<)?[^<]+font-[^>]+(>)?', '', raw_html)
+
+    raw_html = re.sub(r'<span[^>]+(>)?', '', raw_html)
+    raw_html = re.sub(r'</span>', '', raw_html)
+
+    raw_html = raw_html.replace('&iacute;', 'í')
+    raw_html = raw_html.replace('&aacute;', 'á')
+
     re_tags = re.compile(r'<.*?>')
     re_comments = re.compile(r'<!--.*?-->', flags=re.MULTILINE)
-    re_nbsp = re.compile(r'&nbsp;')
     re_empty_line = re.compile(r'\n\s*\n', flags=re.MULTILINE)
-
-    if len(raw_html.splitlines()) == 1:
-        raw_html = raw_html.replace('div>', 'div>\n')
-
+    raw_html = re.sub(re_tags, '', raw_html)
     raw_html = re.sub(re_nbsp, ' ', raw_html)
-    raw_html = html.unescape(raw_html)
-    text = re.sub(re_tags, '', raw_html)
-    text = re.sub(re_nbsp, ' ', text)
-    text = re.sub(re_comments, '', text)
-    text = re.sub(re_empty_line, '\n\n', text)
+    raw_html = re.sub(re_comments, '', raw_html)
+    raw_html = re.sub(re_empty_line, '\n\n', raw_html)
 
-    return text
+    raw_html = raw_html.replace('<!--', '')
+
+    return raw_html
 
 
 def find_files(which: str, where: str='.') -> List[str]:

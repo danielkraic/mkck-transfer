@@ -84,6 +84,7 @@ class WordpressAPI(object):
                                                                         planned='' if is_planned else 'mp-')
 
         items = self.get_items(date_from=date_from, date_to=date_to, item_type='media', search=file_name_prefix)
+        items = sorted(items, key=lambda item: item['media_details']['sizes']['full']['file'])
 
         return [item['id']
                 for item in items

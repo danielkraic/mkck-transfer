@@ -17,19 +17,11 @@ year_page_template = '''
             <tr>
               <td width="50%">
                 <h4><strong>Plánované akcie</strong></h4>
-                <p>
-                  {% for item in events_planned %}
-                    {{item.event_number}}. <a href="{{item.link}}">{{item.title}}{{item.date}}</a><br />
-                  {% endfor %}
-                </p>
+                {events_planned_str}
               </td>
               <td width="49%">
                 <h4><strong>Akcie mimo plánu</strong></h4>
-                <p>
-                  {% for item in events_non_planned %}
-                    {{item.event_number}}. <a href="{{item.link}}">{{item.title}}{{item.date}}</a><br />
-                  {% endfor %}
-                </p>
+                {events_non_planned_str}
               </td>
             </tr>
           </tbody>
@@ -42,4 +34,19 @@ year_page_template = '''
 
 
 def get_year_page_content(events_planned: List[EventLink], events_non_planned: List[EventLink]) -> str:
-    return Template(year_page_template).render(events_planned=events_planned, events_non_planned=events_non_planned)
+    events_planned_str = _get_events_paragraph(events=events_planned)
+    events_non_planned_str = _get_events_paragraph(events=events_non_planned)
+    return year_page_template.format(
+        events_planned_str=events_planned_str,
+        events_non_planned_str=events_non_planned_str)
+
+
+def _get_events_paragraph(events: List[EventLink]) -> str:
+    if not events:
+        return ''
+
+    res = ''
+    for event in events:
+        res += '{event_number}. <a href="{link}">{title}{date}</a><br />'.format(
+            event_number=event.event_number, link=event.link, title=event.title, date=event.date)
+    return '<p>{}</p>'.format(res)
