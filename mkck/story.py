@@ -59,7 +59,7 @@ def _get_footer_index(lines: List[str]) -> int:
                 break
 
     for i, line in reversed(list(enumerate(lines))):
-        if line.startswith('Foto z akcie:'):
+        if line.lower().startswith('foto z akcie:') or line.lower().startswith('foto:'):
             index = i
             break
 

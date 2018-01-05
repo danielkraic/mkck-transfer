@@ -3,7 +3,8 @@ from os.path import isdir, exists
 from typing import Tuple, List, Optional
 
 
-from mkck.config import EVENTS_WITHOUT_PHOTOS_PER_YEAR, DIR_PHOTOS, FILE_PHOTOS, FILE_STORY, DIR_DOCS_BASE
+from mkck.config import EVENTS_WITHOUT_PHOTOS_PER_YEAR, DIR_PHOTOS, FILE_PHOTOS, FILE_STORY, DIR_DOCS_BASE, \
+    DIR_DOCS_SPECIAL_BASE, INVALID_STORY_EVENTS_PER_YEAR
 from mkck.errors import EventError
 from mkck.gallery import GalleryItem
 from mkck.photos import get_photos
@@ -16,10 +17,13 @@ def is_without_photos(year: int, number: int) -> bool:
 
 
 class Event(object):
-    def __init__(self, year: int, number: int, title: str, _date: Optional[date]) -> None:
+    def __init__(self, year: int, number: int, title: str, _date: Optional[date], planned: bool=True,
+                 path: Optional[str]=None)\
+            -> None:
         self._year: int = year
         self._number: int = number
-        self._is_planned = True  # TODO: add support for non-planned events
+        self._is_planned: bool = planned
+        self._path: Optional[str] = path
         self.title: str = title
         self.date: Optional[date] = _date
         self._story: str = self._get_story()
@@ -45,8 +49,10 @@ class Event(object):
         return self._is_planned
 
     def __str__(self):
-        return '{}:{} t:{} d:{} c:{} p:{}'.format(self._year, self._number, self.title, self.date, len(self._story),
-                                                  len(self.photos))
+        planned = '' if self._is_planned else 'MP-'
+        return '{year}:{planned}{num} t:{title} d:{date} c:{story} p:{photos}'.format(
+            year=self._year, planned=planned, num=self._number, title=self.title, date=self.date,
+            story=len(self._story), photos=len(self.photos))
 
     def get_content(self, images: Optional[List[int]]=None) -> str:
         if not images:
@@ -69,13 +75,16 @@ class Event(object):
             if self._year < 1990:
                 raise ValueError('Invalid event year {}'.format(self._year))
 
-            if self._number < 1 or self._number > 99:
+            if self._number < 1 \
+                    or (self._is_planned and self._number > 99) \
+                    or (not self._is_planned and self._number < 100):
                 raise ValueError('Invalid event number {}'.format(self._number))
 
             if len(self.title) < 3:
                 raise ValueError('Invalid event title {}'.format(self.title))
 
-            if len(self._story.splitlines()) < 2:
+            if len(self._story.splitlines()) < 2 and \
+                    self._number not in INVALID_STORY_EVENTS_PER_YEAR.get(self.year, []):
                 raise ValueError('Invalid event story. Num of lines {}'.format(len(self._story.splitlines())))
 
             if len(self.photos) == 0 and not is_without_photos(year=self._year, number=self._number):
@@ -85,6 +94,9 @@ class Event(object):
             raise EventError('Validation failed. Data: {}. Error: {}'.format(self.__str__(), error))
 
     def _get_story(self) -> str:
+        if self._number in INVALID_STORY_EVENTS_PER_YEAR.get(self._year, []):
+            return ''
+
         story_file = self._get_event_story_path()
 
         if not exists(story_file):
@@ -115,9 +127,16 @@ class Event(object):
         return '{}/{}/{}/'.format(DIR_DOCS_BASE, self._year, self._number)
 
     def _get_event_story_path(self) -> str:
+        if self._path:
+            return DIR_DOCS_SPECIAL_BASE + '/' + self._path + '/' + FILE_STORY
+
         return self._get_event_base_path() + FILE_STORY
 
     def _get_event_photos_paths(self) -> Tuple[str, str]:
+        if self._path:
+            event_base = DIR_DOCS_SPECIAL_BASE + '/' + self._path + '/'
+            return event_base + FILE_STORY, event_base
+
         event_base = self._get_event_base_path()
 
         photos_file = event_base + FILE_PHOTOS

@@ -29,9 +29,8 @@ def _read_year_file(year: int, file: str) -> List[Event]:
 def _get_events(year: int, content: str) -> List[Event]:
     result = []
 
-    # links = re.findall(r'<a href.*akciadet.*cakcie=(\d+).*>(.*)<\/a>', content)
+    # process all links
     links = re.findall(r'<a href.*akciadet.*cakcie=(\d+)[^>]*>([^<]+)<', content)
-
     for link in links:
         num, title = link
         title = html.unescape(title)
@@ -43,19 +42,29 @@ def _get_events(year: int, content: str) -> List[Event]:
         event = Event(year=year, number=int(num), title=title, _date=extract_date(year=year, text=title))
         result.append(event)
 
+    # process links for KT
     links = re.findall(r'<a href.*akciadet.*cakcie=KT[^>]*>([^<]+)<', content)
     for link in links:
         num, title = 99, link
         title = html.unescape(title)
         title = title.replace(u'\xa0', u' ')
 
-        if _skip_event(year=year, event_number=int(num)):
-            continue
-
         event = Event(year=year, number=int(num), title=title, _date=extract_date(year=year, text=title))
         result.append(event)
 
-    return sorted(result, key=lambda item: '{}-{:02d}'.format(item.year, item._number))
+    # process links for non-planned events
+    links = re.findall(r'akciadet.*rok=2per.*cakcie=([^"&]+)[^>]*>([^<]+)<', content)
+    for i, link in enumerate(links):
+        path, title = link
+        num = 100 + i
+        title = html.unescape(title)
+        title = title.replace(u'\xa0', u' ')
+
+        event = Event(year=year, number=num, title=title, _date=extract_date(year=year, text=title), planned=False,
+                      path=path)
+        result.append(event)
+
+    return sorted(result, key=lambda item: item.date)
 
 
 def _skip_event(year: int, event_number: int) -> bool:

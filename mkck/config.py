@@ -1,5 +1,5 @@
 DIR_DOCS_BASE = '/Users/danielkraic/work/code/web/mkck-old/unger/web/documents/akcie'
-DIR_DOCS_SPECIAL_BASE = '/Users/danielkraic/work/code/web/mkck-old/unger/web/documents/akcie/2per/'
+DIR_DOCS_SPECIAL_BASE = '/Users/danielkraic/work/code/web/mkck-old/unger/web/documents/akcie/2per'
 DIR_PHOTOS_UPLOAD_TMP = '/tmp'
 
 FILE_YEAR = 'akciear.htm.txt'
@@ -12,9 +12,15 @@ NOTICE = True
 
 
 EVENTS_WITHOUT_PHOTOS_PER_YEAR = {
-    2015: [19]
+    2015: [19],
 }
 
 EVENTS_TO_SKIP_PER_YEAR = {
-    2009: [8, 13, 21]
+    2009: [8, 13, 21],
+}
+
+INVALID_STORY_EVENTS_PER_YEAR = {
+    2004: [100],
+    2005: [100],
+    2016: [109],
 }

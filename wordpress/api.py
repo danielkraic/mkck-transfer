@@ -1,11 +1,27 @@
 from datetime import date, datetime
+from functools import wraps
+import time
 from typing import List, Optional, Tuple
 
 import requests
 from requests.auth import HTTPBasicAuth
+from requests.exceptions import HTTPError
 
 from mkck.debug import notice
 from mkck.gallery import GalleryItem, temporary_image
+
+
+def retry(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            ret = func(*args, **kwargs)
+        except HTTPError as error:
+            print('HTTPError {}. Retry in 5 sec.'.format(error))
+            time.sleep(5)
+            ret = func(*args, **kwargs)
+        return ret
+    return wrapper
 
 
 class WordpressAPI(object):
@@ -28,6 +44,7 @@ class WordpressAPI(object):
 
         return resp
 
+    @retry
     def upload_image(self, image: str, caption: str, publish_date: Optional[date]) -> int:
         data = {
             'file': open(image, 'rb'),
@@ -58,13 +75,19 @@ class WordpressAPI(object):
 
         return date_from, date_to
 
-    def get_items(self, item_type: str, date_from: datetime, date_to: datetime, search: Optional[str]=None) \
+    @retry
+    def get_items(self, item_type: str, date_from: Optional[datetime]=None, date_to: Optional[datetime]=None,
+                  search: Optional[str]=None) \
             -> List[dict]:
         payload = {
-            'after': date_from.isoformat(),
-            'before': date_to.isoformat(),
             'per_page': 100,
         }
+
+        if date_from:
+            payload['after'] = date_from.isoformat()
+
+        if date_to:
+            payload['before'] = date_to.isoformat()
 
         if search:
             payload['search'] = search
@@ -73,11 +96,13 @@ class WordpressAPI(object):
         resp.raise_for_status()
         return resp.json()
 
+    @retry
     def remove_items(self, item_type, item_id) -> None:
         resp = self._session.delete(url=self._api_url + '/{}/{}'.format(item_type, item_id))
         resp.raise_for_status()
         notice('removed {} with id {}'.format(item_type, item_id))
 
+    @retry
     def get_post_images(self, year: int, event_number: int, is_planned: bool=True) -> List[int]:
         date_from, date_to = self.get_year_date_range(year=year)
         file_name_prefix = '{year}-{planned}{event_number:02d}-'.format(year=year, event_number=event_number,

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Dict, Optional
 
 from wordpress_xmlrpc import Client, WordPressPost, WordPressPage
 from wordpress_xmlrpc.methods.posts import NewPost
@@ -9,6 +9,7 @@ from mkck.event import Event
 from mkck.utils import format_iso_date
 from mkck.year_page import get_year_page_content, EventLink
 from wordpress.api import WordpressAPI
+from wordpress.errors import ImporterError
 
 
 class Importer(object):
@@ -28,10 +29,7 @@ class Importer(object):
         if post_date:
             post.date = datetime(year=post_date.year, month=post_date.month, day=post_date.day)
 
-        post.terms_names = {
-            'post_tag': ['imported', 'rok_{}'.format(event.year)],
-            'category': ['Akcie', 'Akcie_{}'.format(event.year)]
-        }
+        post.terms_names = _get_tags(year=event.year, is_planned=event.is_planned)
 
         post_id = self._client.call(NewPost(post))
         notice('Imported post {}. {}'.format(post_id, event))
@@ -51,25 +49,71 @@ class Importer(object):
             for item_id in [item['id'] for item in items]:
                 self._api.remove_items(item_type=item_type, item_id=item_id)
 
-    def get_year_posts(self, year: int) -> List[dict]:
-        date_from, date_to = self._api.get_year_date_range(year=year)
-        return self._api.get_items(item_type='posts', date_from=date_from, date_to=date_to)
-
     def create_year_page(self, year: int) -> None:
-        posts = self.get_year_posts(year=year)
+        date_from, date_to = self._api.get_year_date_range(year=year)
+
+        posts = self._api.get_items(item_type='posts', date_from=date_from, date_to=date_to)
         posts = sorted(posts, key=lambda item: item['date'])
+
+        categories = self._api.get_items(item_type='categories', search='{}_'.format(year))
+
+        category_planned = _get_planned_category(categories=categories)
+        category_not_planned = _get_not_planned_category(categories=categories)
+
+        posts_planned = [post for post in posts if category_planned in post['categories']]
+        posts_not_planned = [] if not category_not_planned \
+            else [post for post in posts if category_not_planned in post['categories']]
 
         events_planned = [EventLink(event_number=i+1,
                                     title=post['title']['rendered'],
                                     link=post['link'],
                                     date=format_iso_date(post['date']))
-                          for i, post in enumerate(posts)]
+                          for i, post in enumerate(posts_planned)]
+
+        events_not_planned = [EventLink(event_number=i + 1,
+                                        title=post['title']['rendered'],
+                                        link=post['link'],
+                                        date=format_iso_date(post['date']))
+                              for i, post in enumerate(posts_not_planned)]
 
         page = WordPressPage()
         page.post_status = 'publish'
         page.title = 'Akcie {}'.format(year)
-        page.content = get_year_page_content(events_planned=events_planned, events_non_planned=[])
+        page.content = get_year_page_content(events_planned=events_planned, events_non_planned=events_not_planned)
         page.date = datetime(year=year, month=1, day=1)
 
         page_id = self._client.call(NewPost(page))
         notice('Created page {} for year {}'.format(page_id, year))
+
+
+def _get_tags(year: int, is_planned: bool) -> Dict[str, List[str]]:
+    res = {
+        'post_tag': ['imported', 'rok_{}'.format(year)],
+        'category': ['Akcie', 'Akcie_{}'.format(year)]
+    }
+
+    if is_planned:
+        res['post_tag'].append('rok_{}_planovane'.format(year))
+        res['category'].append('Akcie_{}_planovane'.format(year))
+    else:
+        res['post_tag'].append('rok_{}_mimo_plan'.format(year))
+        res['category'].append('Akcie_{}_mimo_plan'.format(year))
+
+    return res
+
+
+def _get_planned_category(categories: List[dict]) -> int:
+    for category in categories:
+        if category['name'].endswith('planovane'):
+            return category['id']
+
+    raise ImporterError('Failed to get category "planned".')
+
+
+def _get_not_planned_category(categories: List[dict]) -> Optional[int]:
+    for category in categories:
+        if category['name'].endswith('mimo_plan'):
+            return category['id']
+
+    return None
+
